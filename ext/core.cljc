@@ -1,4 +1,4 @@
-(ns contrib.ext.strings
+(ns contrib.ext.core
   (:require [clojure.string :as s]))
 
 
@@ -28,7 +28,23 @@
     (into {} (filter i) coll)))
 
 
-(defn match
-  "Equivalent of rust's match but for exception handling. Note that
-   the it only supports ExceptionInfo exceptions(this is intentional)."
-  [expr])
+(defn- except-instance?
+  "For a given exception class ex, confirm that the error object e is
+  an instance of it. If the error object is a clojure.lang.ExceptionInfo
+  confirm that its :type property is the same as ex"
+  [ex e]
+  (if (instance? #?(:clj clojure.lang.ExceptionInfo
+                    :cljs cljs.core.ExceptionInfo)
+                 e)
+    (-> e ex-data :type (= ex))
+    :just))
+
+
+
+(defmacro match [expr & forms]
+  (assert (-> forms count even?) "Number of forms must be even")
+  `(let [e# ~expr]
+     (condp except-instance? e#
+       ~@forms
+       (throw e#))))
+

@@ -11,9 +11,8 @@
                                      :path-exists? #(secretary/locate-route %)}))
 
 
-(defn route! [sub$ url]
-  (dosub [_ sub$]
-    (accountant/navigate! url)))
+(defn route! [url]
+  (accountant/navigate! url))
 
 
 (defonce state (r/atom {:current [:div]}))

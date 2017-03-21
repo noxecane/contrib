@@ -15,7 +15,7 @@
 
 
 (defn valid-form? [{errors :errors}]
-  (every? empty (vals errors)))
+  (every? not (vals errors)))
 
 
 (defn setup-form! [state node-in]
