@@ -1,7 +1,7 @@
 (ns contrib.ui.router
   (:require-macros [reagent.ratom :refer [reaction]])
   (:require [accountant.core :as accountant]
-            [contrib.ui.signal :as signal]
+            [contrib.ui.core :as ui :refer [dosub]]
             [reagent.core :as r]
             [secretary.core :as secretary]))
 
@@ -11,14 +11,16 @@
                                      :path-exists? #(secretary/locate-route %)}))
 
 
+(defn route! [sub$ url]
+  (dosub [_ sub$]
+    (accountant/navigate! url)))
+
+
 (defonce state (r/atom {:current [:div]}))
-(defonce channel (signal/channel))
+(def node-in (ui/node))
 
-
-(signal/listen
- (signal/on channel :switch)
- (fn [[_ view]]
-   (swap! state assoc :current view)))
+(dosub [[_ view] (ui/key-sub node-in :switch)]
+  (swap! state assoc :current view))
 
 
 (defn view []

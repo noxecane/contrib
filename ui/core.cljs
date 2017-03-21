@@ -1,23 +1,8 @@
 (ns contrib.ui.core
-  (:require [clojure.string :as s]
-            [contrib.ui.signal :as signal]
+  (:require-macros [cljs.core.async.macros :as a :refer [go-loop]]
+                   [contrib.ui.core :refer [dosub]])
+  (:require [cljs.core.async :as a]
             [reagent.core :as r]))
-
-
-(defn str->node
-  "Combines a list of strings to form a keyword"
-  [& combs]
-  (->> combs
-       (s/join ".")
-       (keyword)))
-
-
-(defn add-class [{:keys [class-name] :as props} new-class]
-  (assoc props :class-name (if class-name (str class-name " " new-class) new-class)))
-
-
-(defn toggle-class [props trigger new-class]
-  (if trigger (add-class props new-class) props))
 
 
 (defn- by-id
@@ -33,21 +18,67 @@
   (r/render-component main (by-id node-id)))
 
 
-(defn input-fn
-  "Create an input function to dispatch update events to
-  the stream using the format [$name $value] from input
-  elements"
-  [channel name]
-  (let [notify-stream #(signal/emit channel [:update name %])]
-   #(-> %
-        (aget "target")
-        (aget "value")
-        (notify-stream))))
+(defprotocol INode
+  (emit [s e]
+    "Notifies all other node of an event e")
+  (on [s k]
+    "Passes events to k"))
 
 
-(defn click-fn
-  "Create a function to dispatch events from button clicks.
-  The events are dispatched without any arguments acting
-  as some form of notification."
-  [channel action]
-  #(signal/emit channel [action]))
+(deftype AsyncNode [in out]
+  INode
+  (emit [_ event-v]
+    (a/put! in event-v))
+
+  (on [sock sub]
+    (a/tap out sub)
+    sub))
+
+
+(defn node []
+  (let [in  (a/chan 10)
+        out (a/mult in)]
+    (->AsyncNode in out)))
+
+
+(defn box
+  ([]
+   (a/chan 10))
+
+  ([xform]
+   (a/chan 10 xform)))
+
+
+(defn basket
+  ([]
+   (-> 10 a/sliding-buffer a/chan))
+
+  ([xform]
+   (-> 10 a/sliding-buffer (a/chan xform))))
+
+
+(defn key-filter
+  "For a given key, create a transducer that filters event vectors"
+  [k]
+  (filter #(= (first %) k)))
+
+
+(defn key-sub
+  "For a given key, create a channel to filter only events with such key"
+  [sock k]
+  (on sock (box (key-filter k))))
+
+
+(defn wait
+  "For a given amount of time, delay the consumption of the event"
+  [from$ to$ n]
+  (go-loop [e (a/<! from$)
+            _ (a/<! (a/timeout n))]
+    (a/put! to$ e)
+    (recur (a/<! from$) (a/<! (a/timeout n))))
+  to$)
+
+
+(defn proxy! [from$ to]
+  (dosub [e from$]
+         (emit to e)))
