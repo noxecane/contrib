@@ -1,8 +1,9 @@
 (ns contrib.ui.router
-  (:require-macros [reagent.ratom :refer [reaction]])
   (:require [accountant.core :as accountant]
-            [contrib.ui.core :as ui :refer [dosub]]
+            [contrib.ext.async :refer-macros [loop-chan-js]]
+            [contrib.talk.emitter :as emitter]
             [reagent.core :as r]
+            [reagent.ratom :refer-macros [reaction]]
             [secretary.core :as secretary]))
 
 
@@ -16,9 +17,9 @@
 
 
 (defonce state (r/atom {:current [:div]}))
-(def node-in (ui/node))
+(def emitter (emitter/emitter))
 
-(dosub [[_ view] (ui/key-sub node-in :switch)]
+(loop-chan-js [[_ view] (emitter/on-event emitter :switch)]
   (swap! state assoc :current view))
 
 

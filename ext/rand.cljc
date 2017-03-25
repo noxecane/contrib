@@ -1,4 +1,4 @@
-(ns contrib.ext.uuid)
+(ns contrib.ext.rand)
 
 
 (defn random

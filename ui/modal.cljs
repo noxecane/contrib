@@ -1,2 +1,0 @@
-(ns contrib.ui.modal)
-

@@ -37,14 +37,17 @@
                     :cljs cljs.core.ExceptionInfo)
                  e)
     (-> e ex-data :type (= ex))
-    :just))
+    (= ex :just) ))
 
 
 
-(defmacro match [expr & forms]
+(defmacro match
+  "A functional way of handling errors."
+  {:style/indent 1}
+  [binding & forms]
   (assert (-> forms count even?) "Number of forms must be even")
-  `(let [e# ~expr]
-     (condp except-instance? e#
-       ~@forms
-       (throw e#))))
-
+  (let [[name expr] binding]
+    `(let [~name ~expr]
+         (condp except-instance? ~name
+           ~@forms
+           ~name))))
