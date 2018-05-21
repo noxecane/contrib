@@ -1,4 +1,4 @@
-(defproject contrib "0.1.0"
+(defproject arewa/contrib "0.1.0"
   :description "A small lib of all my helper functions"
   :url "http://github.com/danceasarxx/contrib"
   :license {:name "Eclipse Public License"
